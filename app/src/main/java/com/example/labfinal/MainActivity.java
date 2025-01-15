@@ -9,6 +9,9 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 public class MainActivity extends AppCompatActivity {
     PixelView drawView;
     TextView timerTextView;
@@ -53,6 +56,8 @@ public class MainActivity extends AppCompatActivity {
                 drawView.yCenterShift = (drawView.screenDims[1] - (drawView.dims[1]*drawView.scaleFactor))/2;
                 drawView.pixels = new int[drawView.screenDims[0]*drawView.screenDims[1]];
                 drawView.drawBuffer = Bitmap.createBitmap(drawView.screenDims[0],drawView.screenDims[1],Bitmap.Config.ARGB_8888);
+
+                drawView.initialize();
 
             }
         });

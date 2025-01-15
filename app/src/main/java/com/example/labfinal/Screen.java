@@ -10,7 +10,7 @@ public class Screen {
     int[] white =   new int[]{255, 255, 255};
 
     //Main array
-    int[][][] array; //Main array containing all pixel values
+    int[] array; //Main array containing all pixel values
 
     //Depth buffer
     double[][] zbuff; //Used to store the depth of every pixel, required in order for proper rendering
@@ -26,35 +26,19 @@ public class Screen {
 
 
     //Constructor
-    public Screen(int[][][] array) {
+    public Screen(int[] array, int width, int height) {
         this.array = array;
-        this.width = array.length;
-        this.height = array[0].length;
+        this.width = width;
+        this.height = height;
         this.zbuff = Misc.makeArray(this.height, this.width, this.farclip); //width and height swapped for [x][y] to be the syntax
-    }
-
-
-    //Turn pixel data into 1d array for use in canvas
-    public void convertData(int[] imgd) {
-        int[][][] array = this.array;
-        for(int x = 0; x < this.width - 1; x++) {
-            for(int y = 0; y < this.height - 1; y++) {
-                int pixelIndex = (y * this.width + x) * 4;
-                imgd[pixelIndex] = array[x][y][0];
-                imgd[pixelIndex + 1] = array[x][y][1];
-                imgd[pixelIndex + 2] = array[x][y][2];
-                imgd[pixelIndex + 3] = 255;
-            }
-        }
     }
 
 
     //Fills the whole array with one solid color
     void screenFill(int[] color) {
-        int[][][] array = this.array;
         for(int x = 0; x < this.width - 1; x++) {
             for(int y = 0; y < this.height - 1; y++) {
-                array[x][y] = color;
+                pixel(x, y, color);
             }
         }
     }
@@ -71,11 +55,11 @@ public class Screen {
 
     //Filters out not possible indexes, so that things can be half visible and not crash, also converts form 2d syntax to the canvas 1d array format
     void pixel(double x1, double y1, int[] value) {
-        int x = (int) Math.floor(x1);
-        int y = (int) Math.floor(y1);
-        if(x >= 0 && y >= 0 && x < this.width && y < this.height) {
-            this.array[x][y] = value;
-        }
+        int pixelIndex = (int) ((y1 * this.width + x1) * 4);
+        this.array[pixelIndex] = value[0];
+        this.array[pixelIndex + 1] = value[1];
+        this.array[pixelIndex + 2] = value[2];
+        this.array[pixelIndex + 3] = 255;
     }
 
     //Only draw pixel if it is in front.
@@ -312,7 +296,7 @@ public class Screen {
     }
 
     //Rotate a set of points around center on three axis
-    double[][] rotPoints(double[][] points, int[]center, double[] rot) {
+    double[][] rotPoints(double[][] points, double[] center, double[] rot) {
         double rotx = rot[0];
         double roty = rot[1];
         double rotz = rot[2];
@@ -385,12 +369,12 @@ public class Screen {
 
 
     //Draws cube given center and side length
-    void drawCube(int[] center, int side, int color) {
+    void drawCube(double[] center, int side, int color) {
         this.drawRotCube(center, side, new double[]{0.0, 0.0, 0.0}, color);
     }
 
     //Draw cube function with rotational parameters
-    void drawRotCube(int[] center, double side, double[] rot, int color) {
+    void drawRotCube(double[] center, double side, double[] rot, int color) {
         double[][] points = new double[8][3];
 
         points[0] = new double[]{center[0] - side/2, center[1] - side/2, center[2] + side/2};
