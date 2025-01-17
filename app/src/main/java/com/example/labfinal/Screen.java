@@ -1,13 +1,22 @@
 package com.example.labfinal;
 
+import java.util.Arrays;
+
 //Main class
 public class Screen {
     //Color presets
-    int[] black =   new int[]{  0,   0,   0};
-    int[] red =     new int[]{255,   0,   0};
-    int[] green =   new int[]{  0, 255,   0};
-    int[] blue =    new int[]{  0,   0, 255};
-    int[] white =   new int[]{255, 255, 255};
+    public int BLACK       = -0x1000000;
+    public int DKGRAY      = -0xbbbbbc;
+    public int GRAY        = -0x777778;
+    public int LTGRAY      = -0x333334;
+    public int WHITE       = -0x1;
+    public int RED         = -0x10000;
+    public int GREEN       = -0xff0100;
+    public int BLUE        = -0xffff01;
+    public int YELLOW      = -0x100;
+    public int CYAN        = -0xff0001;
+    public int MAGENTA     = -0xff01;
+    public int TRANSPARENT = 0;
 
     //Main array
     int[] array; //Main array containing all pixel values
@@ -24,9 +33,12 @@ public class Screen {
     double farclip = -999; //Pixels further than this are culled
     double nearclip = -1 * this.screenDist; //Pixels closer than this are culled
 
+    PixelView caller;
+
 
     //Constructor
-    public Screen(int[] array, int width, int height) {
+    public Screen(PixelView caller, int[] array, int width, int height) {
+        this.caller = caller;
         this.array = array;
         this.width = width;
         this.height = height;
@@ -35,7 +47,7 @@ public class Screen {
 
 
     //Fills the whole array with one solid color
-    void screenFill(int[] color) {
+    public void screenFill(Integer color) {
         for(int x = 0; x < this.width - 1; x++) {
             for(int y = 0; y < this.height - 1; y++) {
                 pixel(x, y, color);
@@ -43,7 +55,7 @@ public class Screen {
         }
     }
 
-    void zClear() {
+    public void zClear() {
         double[][] zbuff = this.zbuff;
         for(int x = 0; x < this.width - 1; x++) {
             for(int y = 0; y < this.height - 1; y++) {
@@ -54,21 +66,24 @@ public class Screen {
 
 
     //Filters out not possible indexes, so that things can be half visible and not crash, also converts form 2d syntax to the canvas 1d array format
-    void pixel(double x1, double y1, int[] value) {
-        int pixelIndex = (int) ((y1 * this.width + x1) * 4);
-        this.array[pixelIndex] = value[0];
-        this.array[pixelIndex + 1] = value[1];
-        this.array[pixelIndex + 2] = value[2];
-        this.array[pixelIndex + 3] = 255;
+    public void pixel(double x1, double y1, Integer value) {
+        setVal((int)x1, (int)y1, value);
+//        this.array[pixelIndex] = value;
+    }
+
+    public void setVal(int x, int y, int val) {
+        this.caller.putPixel(x, y, val);
     }
 
     //Only draw pixel if it is in front.
-    void zpixel(double x1, double y1, double z, int[] value) {
+    public void zpixel(double x1, double y1, double z, Integer value) {
         int x = (int) Math.floor(x1);
         int y = (int) Math.floor(y1);
-        if(z > this.zbuff[x][y] && z < this.nearclip) {
-            this.pixel(x, y, value);
-            this.zbuff[x][y] = z;
+        if ((x < this.width && x >= 0) && (y < this.height && y >= 0)) {
+            if(z > this.zbuff[x][y] && z < this.nearclip) {
+                this.pixel(x, y, value);
+                this.zbuff[x][y] = z;
+            }
         }
     }
 
@@ -78,12 +93,12 @@ public class Screen {
     }
 
     //Clamp values to between 0 and 1
-    int clamp(double value) {
-        return (int) Math.max(0, Math.min(value, 1));
+    double clamp(double value) {
+        return Math.max(0, Math.min(value, 1));
     }
     //Clamp values to between min and max
-    int clamp(double value, int min, int max) {
-        return (int) Math.max(min, Math.min(value, max));
+    double clamp(double value, double min, double max) {
+        return (double) Math.max(min, Math.min(value, max));
     }
 
     //Interpolate between two points with min starting, max ending and gradient being percent
@@ -92,7 +107,7 @@ public class Screen {
     }
 
     //Draws line from one point to another
-    void drawLine(double[] point1, double[] point2, int[] color) {
+    void drawLine(double[] point1, double[] point2, Integer color) {
         if(point1[0] > point2[0]) {
             double[] temp = point1;
             point1 = point2;
@@ -159,7 +174,7 @@ public class Screen {
 
 
     //Draws a triangle between three points
-    void lineTrig(double[] point1, double[] point2, double[] point3, int[] color) {
+    void lineTrig(double[] point1, double[] point2, double[] point3, Integer color) {
         this.drawLine(point1, point2, color);
         this.drawLine(point2, point3, color);
         this.drawLine(point3, point1, color);
@@ -181,7 +196,7 @@ public class Screen {
 
 
     //Compute gradient to find other values like startX and endX to draw between.
-    void scanLine(int y, double[] pointA, double[] pointB, double[] pointC, double[] pointD, int[] color) {
+    void scanLine(int y, double[] pointA, double[] pointB, double[] pointC, double[] pointD, Integer color) {
         //If pa.Y == pb.Y or pc.Y == pd.Y gradient is forced to 1
         double gradient1 = pointA[1] != pointB[1] ? (y - pointA[1]) / (pointB[1] - pointA[1]) : 1;
         double gradient2 = pointC[1] != pointD[1] ? (y - pointC[1]) / (pointD[1] - pointC[1]) : 1;
@@ -208,22 +223,7 @@ public class Screen {
     }
 
     //Draw a triangle using alternate method
-    void drawTrig(double[][] points, String color1) {
-        int[] color;
-        switch (color1) {
-            case "red":
-                color = red;
-                break;
-            case "green":
-                color = green;
-                break;
-            case "blue":
-                color = blue;
-                break;
-            default:
-                color = white;
-                break;
-        }
+    void drawTrig(double[][] points, Integer color) {
         points = this.orderYPoints(points);
         double[] point1 = points[0];
         double[] point2 = points[1];
@@ -266,7 +266,7 @@ public class Screen {
     }
 
     //Fill quads by splitting into two triangles
-    void drawQuad(double[][] points, String color) {
+    void drawQuad(double[][] points, Integer color) {
         if(!(pointAbove(new double[][]{points[0], points[1]}, points[2]) == this.pointAbove(new double[][]{points[0], points[1]}, points[3]))) {
             //Diagonal 0, 1
             this.drawTrig(new double[][]{points[0], points[1], points[2]}, color);
@@ -329,7 +329,7 @@ public class Screen {
 
 
     //Draws cube given projected coordinates
-    void drawProjectedCube(double[][] points, int[] color) {
+    void drawProjectedCube(double[][] points, Integer color) {
         //Bottom face's edges
         this.drawLine(points[0], points[1], color);
         this.drawLine(points[1], points[2], color);
@@ -350,14 +350,14 @@ public class Screen {
     //Draws cube with differently colored faces
     void drawColoredCube(double[][] points) {
         //console.log(points); //for debugging fact clipping
-        this.drawQuad(new double[][]{points[0], points[1], points[2], points[3]}, "red");
-        this.drawQuad(new double[][]{points[4], points[5], points[6], points[7]}, "red");
+        this.drawQuad(new double[][]{points[0], points[1], points[2], points[3]}, RED);
+        this.drawQuad(new double[][]{points[4], points[5], points[6], points[7]}, RED);
 
-        this.drawQuad(new double[][]{points[0], points[1], points[4], points[5]}, "blue");
-        this.drawQuad(new double[][]{points[3], points[2], points[7], points[6]}, "blue");
+        this.drawQuad(new double[][]{points[0], points[1], points[4], points[5]}, BLUE);
+        this.drawQuad(new double[][]{points[3], points[2], points[7], points[6]}, BLUE);
 
-        this.drawQuad(new double[][]{points[3], points[0], points[7], points[4]}, "green");
-        this.drawQuad(new double[][]{points[1], points[2], points[5], points[6]}, "green");
+        this.drawQuad(new double[][]{points[3], points[0], points[7], points[4]}, GREEN);
+        this.drawQuad(new double[][]{points[1], points[2], points[5], points[6]}, GREEN);
     }
 
     //Draws cube given all coordinates

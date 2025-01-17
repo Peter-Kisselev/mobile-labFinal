@@ -42,6 +42,6 @@ public class Face {
 
         points = screen.rotPoints(points, this.model.pos, this.model.rot); // Apply needed rotations
         points = screen.projectPoints(points); // Project from object space into screen space
-        screen.drawTrig(points, Arrays.toString(this.model.faceCols.get(this.faceNum))); // Draw triangle
+        screen.drawTrig(points, this.model.faceCols.get(this.faceNum)); // Draw triangle
     }
 }

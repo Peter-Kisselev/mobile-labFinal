@@ -14,14 +14,27 @@ public class Model {
     public int[] blue  = new int[]{  0,   0, 255};
     public int[] white = new int[]{255, 255, 255};
 
+    public int BLACK       = -0x1000000;
+    public int DKGRAY      = -0xbbbbbc;
+    public int GRAY        = -0x777778;
+    public int LTGRAY      = -0x333334;
+    public int WHITE       = -0x1;
+    public int RED         = -0x10000;
+    public int GREEN       = -0xff0100;
+    public int BLUE        = -0xffff01;
+    public int YELLOW      = -0x100;
+    public int CYAN        = -0xff0001;
+    public int MAGENTA     = -0xff01;
+    public int TRANSPARENT = 0;
+
     // Map color string to color values
-    public Map<String, int[]> colorDict = new HashMap<String, int[]>() {
+    public Map<String, Integer> colorDict = new HashMap<String, Integer>() {
         {
-            put("black", black);
-            put("red", red );
-            put("green", green);
-            put("blue", blue);
-            put("white", white);
+            put("black", BLACK);
+            put("red", RED);
+            put("green", GREEN);
+            put("blue", BLUE);
+            put("white", WHITE);
         }
     };
 
@@ -30,7 +43,7 @@ public class Model {
     List<double[]> vertices = new ArrayList<double[]>();
     List<Face> faces = new ArrayList<Face>();
     List<double[]> vertexNormals = new ArrayList<double[]>();
-    List<int[]> faceCols = new ArrayList<int[]>();
+    List<Integer> faceCols = new ArrayList<Integer>();
 
     // World space data
     double[] pos;
@@ -104,7 +117,7 @@ public class Model {
             // Split values in line into seperate values
             linesDoub[i] = linesArr[i].split(" ");
             // Vertex
-            if(linesDoub[i][0] == "v") {
+            if(linesDoub[i][0].equals("v")) {
                 double[] pos = new double[]{Double.parseDouble(linesDoub[i][1]), Double.parseDouble(linesDoub[i][2]), Double.parseDouble(linesDoub[i][3])};
                 this.vertices.add(pos);
             }
@@ -134,7 +147,7 @@ public class Model {
             linesDoub[i] = linesArr[i].split(" ");
 //            linesDoub[i][1] = linesArr[i][1].split("\r")[0]; // Removing bad formatting
             // Current only case, a face color
-            if(linesDoub[i][0] == "f") {
+            if(linesDoub[i][0].equals("f")) {
                 this.faceCols.add(colorDict.get(linesDoub[i][1]));
             }
         }

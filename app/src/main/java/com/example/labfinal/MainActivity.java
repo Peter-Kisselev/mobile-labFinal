@@ -11,20 +11,26 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
     PixelView drawView;
     TextView timerTextView;
-    long startTime = 0;
+    double startTime = getTime();
 
     Handler timerHandler = new Handler();
     Runnable timerRunnable = new Runnable() {
 
         @Override
         public void run() {
+
+
             drawView.allowRun = true;
+            drawView.tNow = getTime();
             drawView.invalidate(); // Execute main loop logic
-            timerHandler.postDelayed(this, drawView.msDelay); //Set framerate target
+            drawView.tPrev = getTime();
+            timerHandler.postDelayed(this, (long) Math.max((long)0, (long) drawView.msDelay-(drawView.tPrev-drawView.tNow))); //Set framerate target
         }
     };
 
@@ -34,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
 //        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
         drawView = (PixelView) findViewById(R.id.pixel_view);
+        drawView.tInit = startTime;
 
         Button b = (Button) findViewById(R.id.button);
         b.setText("start");
@@ -86,5 +93,10 @@ public class MainActivity extends AppCompatActivity {
             timerHandler.postDelayed(timerRunnable, 0);
             b.setText("stop");
         }
+    }
+
+    public double getTime(){
+        Instant instant = Instant.now();
+        return (double) Long.parseLong(("" + instant.getEpochSecond() + instant.getNano()).substring(6))/1000;
     }
 }

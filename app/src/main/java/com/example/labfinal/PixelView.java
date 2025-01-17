@@ -16,7 +16,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class PixelView extends View {
     private Context mContext;
@@ -27,7 +29,7 @@ public class PixelView extends View {
     public int[] dims;
 
     public int[] screenDims;
-    public final int scaleFactor = 10;
+    public final int scaleFactor = 5;
 
     public final int targetFPS = 30;
     public final int msDelay = 1000/targetFPS;
@@ -48,11 +50,16 @@ public class PixelView extends View {
     int MAGENTA     = -0xff01;
     int TRANSPARENT = 0;
 
+
+    public Screen s;
     public Model curModel;
     //Calculate color, ARGB each value on [0, 255]
     //                int color = (255 & 0xff) << 24 | (10 & 0xff) << 16 | (10 & 0xff) << 8 | (10 & 0xff);
 
     int FRAME = 0;
+    public double tPrev;
+    public double tInit;
+    public double tNow;
 
     //Set up waiting until view is ready
     boolean allowRun = false;
@@ -67,31 +74,41 @@ public class PixelView extends View {
     public PixelView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         mContext = context;
-        String filePath = "models/Cube/cube.obj";
-        String cubeRaw = FileUtil.readAssetFile(mContext, filePath);
-        filePath = "models/Cube/cube.col";
-        String cubeRawCol = FileUtil.readAssetFile(mContext, filePath);
-        Model cube = new Model(cubeRaw, cubeRawCol);
-        //        Model sqrPyr = new Model(sqrPyrRaw, sqrPyrRawCol);
-        curModel = cube;
+//        String filePath = "models/Cube/cube.obj";
+//        String cubeRaw = FileUtil.readAssetFile(mContext, filePath);
+//        filePath = "models/Cube/cube.col";
+//        String cubeRawCol = FileUtil.readAssetFile(mContext, filePath);
+//        Model cube = new Model(cubeRaw, cubeRawCol);
+//        curModel = cube;
+
+        String filePath = "models/Square_Pyramid/square_pyramid.obj";
+        String pyrRaw = FileUtil.readAssetFile(mContext, filePath);
+        filePath = "models/Square_Pyramid/square_pyramid.col";
+        String pyrRawCol = FileUtil.readAssetFile(mContext, filePath);
+        Model sqrPyr = new Model(pyrRaw, pyrRawCol);
+        curModel = sqrPyr;
     }
 
     public void initialize() {
-        Screen s = new Screen(pixels, dims[0], dims[1]);
+        System.out.println("Dim");
+        System.out.println(dims[1]);
+        s = new Screen(this, pixels, dims[0], dims[1]);
     }
 
     // Allow for image scaling and as a result faster computation
     public void putPixel(int x, int y, int color) {
+        x = x * scaleFactor;
+        y = y * scaleFactor;
         for(int i = 0; i < scaleFactor; i++) {
             for(int j = 0; j < scaleFactor; j++) {
-                drawPixel(scaleFactor*x+i,scaleFactor*y+j, color);
+                int pixPos = (y+yCenterShift+i)*screenDims[0]+x+j;
+                drawPixel(pixPos, color);
             }
         }
     }
 
     // Prevent exiting array bounds
-    public void drawPixel(int x, int y, int color) {
-        int pixPos = (y+yCenterShift)*screenDims[0]+x;
+    public void drawPixel(int pixPos, int color) {
         if(pixPos >= 0 && pixPos < pixels.length) {
             pixels[pixPos] = color;
         }
@@ -113,34 +130,36 @@ public class PixelView extends View {
     }
 
     public void drawFrame(int frameVal) {
-        double t = (curTime-preTime);
+        List<Face> faces = new ArrayList<Face>();
+        double t = (tNow-tPrev);
+//        System.out.println(frameVal);
         // console.log(t + " ms");
-        let tIn = (t+1)/10;
-        let rot = tIn;
+        double tIn = (t+1)/10;
+        double rot = tIn;
         // let rot = 2/(t+1);
-        s.screenFill(black);
+        s.screenFill(BLACK);
         // testObj.setPos([0, 2, -5]);
-        let angleSet = (curTime-tinit)/2000;
-        // console.log(angleSet)
-        testObj.setPos([0, 2*(Math.sin(angleSet)), -4]);
-        //testObj.setRot([0, 135, 0]);
-        testObj.setRot([-180-mouseY*mouseRot, -mouseX*mouseRot, 0]);
+        double angleSet = (tNow-tInit)/20000;
+//         console.log(angleSet)
+        System.out.println(angleSet);
+        curModel.setPos(new double[]{0, 0, -4});
+        curModel.setRot(new double[]{angleSet, 45, 0});
         // testObj.addRot([0, rot, 0]);
-        testObj.addObject(faces);
-        for(let i = 0; i < faces.length; i++) {
-            faces[i].drawFace(s);
+        curModel.addObject(faces);
+        for(int i = 0; i < faces.size(); i++) {
+            faces.get(i).drawFace(s);
         }
         //testObj.printData();
 
         s.zClear();
-        faces = [];
     }
 
     // Boilerplate to display generated pixels
     public void mainRun(Canvas canvas) {
-        if(pixels != null) {
+        if(pixels != null && s != null) {
             FRAME += 1;
 //            System.out.println("Frame: " + FRAME);
+//            buildFrame(FRAME);
             drawFrame(FRAME);
             drawBuffer.setPixels(pixels, 0, screenDims[0], 0, 0, screenDims[0], screenDims[1]);
             canvas.drawBitmap(drawBuffer, 0.0F, 0.0F,null);
