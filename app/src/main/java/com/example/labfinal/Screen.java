@@ -33,8 +33,7 @@ public class Screen {
     double farclip = -999; //Pixels further than this are culled
     double nearclip = -1 * this.screenDist; //Pixels closer than this are culled
 
-    PixelView caller;
-
+    PixelView caller; //Allow putting values in display code
 
     //Constructor
     public Screen(PixelView caller, int[] array, int width, int height) {
@@ -115,8 +114,6 @@ public class Screen {
         }
         double m = (point2[1] - point1[1])/(point2[0] - point1[0]);
         double b = point1[1] - (m * point1[0]);
-        //int m2 = (point2[2] - point1[2])/(point2[0] - point1[0]);
-        //int b2 = point1[2] - (m2 * point1[0]);
 
         //Case for vertical line
         if(m == Double.POSITIVE_INFINITY || m == Double.NEGATIVE_INFINITY) {
@@ -392,7 +389,3 @@ public class Screen {
 
     //End of class
 }
-
-
-//Export all functions
-//export { Screen, Object, Misc };

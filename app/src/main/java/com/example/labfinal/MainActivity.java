@@ -3,10 +3,13 @@ package com.example.labfinal;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.ColorInt;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.IOException;
@@ -15,9 +18,27 @@ import java.time.Instant;
 import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
+    int BLACK       = -0x1000000;
+    int DKGRAY      = -0xbbbbbc;
+    int GRAY        = -0x777778;
+    int LTGRAY      = -0x333334;
+    int WHITE       = -0x1;
+    int RED         = -0x10000;
+    int GREEN       = -0xff0100;
+    int BLUE        = -0xffff01;
+    int YELLOW      = -0x100;
+    int CYAN        = -0xff0001;
+    int MAGENTA     = -0xff01;
+    int TRANSPARENT = 0;
+
     PixelView drawView;
     TextView timerTextView;
     double startTime = getTime();
+
+    private boolean isTouch = false;
+
+    double[] touchPos = new double[2];
+
 
     Handler timerHandler = new Handler();
     Runnable timerRunnable = new Runnable() {
@@ -28,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
             drawView.allowRun = true;
             drawView.tNow = getTime();
+//            System.out.println(drawView.tNow);
             drawView.invalidate(); // Execute main loop logic
             drawView.tPrev = getTime();
             timerHandler.postDelayed(this, (long) Math.max((long)0, (long) drawView.msDelay-(drawView.tPrev-drawView.tNow))); //Set framerate target
@@ -37,8 +59,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+
+        getWindow().setNavigationBarColor(BLACK);
+        getWindow().setStatusBarColor(BLACK);
+
         drawView = (PixelView) findViewById(R.id.pixel_view);
         drawView.tInit = startTime;
 
@@ -97,6 +122,22 @@ public class MainActivity extends AppCompatActivity {
 
     public double getTime(){
         Instant instant = Instant.now();
-        return (double) Long.parseLong(("" + instant.getEpochSecond() + instant.getNano()).substring(6))/1000;
+        return instant.toEpochMilli();
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+
+        int X = (int) event.getX();
+        int Y = (int) event.getY();
+
+        double x2 = (double) X / drawView.screenDims[0];
+        double y2 = (double) Y / drawView.screenDims[1];
+
+        touchPos[0] = x2;
+        touchPos[1] = y2;
+
+        drawView.touchPos = touchPos;
+        return true;
     }
 }

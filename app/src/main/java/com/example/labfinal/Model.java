@@ -49,9 +49,6 @@ public class Model {
     double[] pos;
     double[] rot;
 
-    // Extra data
-//    String[][] faceCols;
-
 
     // Constructor
     public Model(String objString, String colString) {
@@ -95,16 +92,6 @@ public class Model {
         System.out.println("-----------------------------------");
         System.out.println("Vertices:");
         System.out.println(this.vertices);
-        // System.out.println("Faces:");
-        // System.out.println(this.faces);
-        // System.out.println("Vertex Normals:");
-        // System.out.println(this.vertexNormals);
-        // System.out.println("World space data:");
-        // System.out.println("-----------------------------------");
-        // System.out.println("Position:");
-        // System.out.println(this.pos);
-        // System.out.println("Rotation:");
-        // System.out.println(this.rot);
         System.out.println("Colors:");
         System.out.println(this.faceCols);
     }
@@ -145,7 +132,6 @@ public class Model {
         String[][] linesDoub = new String[linesArr.length][2];
         for(int i = 0; i < linesArr.length; i++) {
             linesDoub[i] = linesArr[i].split(" ");
-//            linesDoub[i][1] = linesArr[i][1].split("\r")[0]; // Removing bad formatting
             // Current only case, a face color
             if(linesDoub[i][0].equals("f")) {
                 this.faceCols.add(colorDict.get(linesDoub[i][1]));

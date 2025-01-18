@@ -1,6 +1,7 @@
 package com.example.labfinal;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.util.AttributeSet;
@@ -8,6 +9,7 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -31,10 +33,12 @@ public class PixelView extends View {
     public int[] screenDims;
     public final int scaleFactor = 5;
 
-    public final int targetFPS = 30;
+    public final int targetFPS = 60;
     public final int msDelay = 1000/targetFPS;
 
     public int yCenterShift = 0;
+
+    public double[] touchPos = new double[]{0.5, 0.5};
 
     //    Color presets
     int BLACK       = -0x1000000;
@@ -50,11 +54,8 @@ public class PixelView extends View {
     int MAGENTA     = -0xff01;
     int TRANSPARENT = 0;
 
-
     public Screen s;
     public Model curModel;
-    //Calculate color, ARGB each value on [0, 255]
-    //                int color = (255 & 0xff) << 24 | (10 & 0xff) << 16 | (10 & 0xff) << 8 | (10 & 0xff);
 
     int FRAME = 0;
     public double tPrev;
@@ -70,23 +71,40 @@ public class PixelView extends View {
     public static int FRAME_UPDATE_RATE = 10; //measured in frames
     public static int TARGET_FPS = 1000;
 
-    // Constructor
+    public static double mouseRot = 360;
+
+    // Constructor, additionally read the files for the 3D model
     public PixelView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         mContext = context;
-//        String filePath = "models/Cube/cube.obj";
-//        String cubeRaw = FileUtil.readAssetFile(mContext, filePath);
-//        filePath = "models/Cube/cube.col";
-//        String cubeRawCol = FileUtil.readAssetFile(mContext, filePath);
-//        Model cube = new Model(cubeRaw, cubeRawCol);
-//        curModel = cube;
 
-        String filePath = "models/Square_Pyramid/square_pyramid.obj";
-        String pyrRaw = FileUtil.readAssetFile(mContext, filePath);
-        filePath = "models/Square_Pyramid/square_pyramid.col";
-        String pyrRawCol = FileUtil.readAssetFile(mContext, filePath);
-        Model sqrPyr = new Model(pyrRaw, pyrRawCol);
-        curModel = sqrPyr;
+
+        String[] colors = {"Cube", "Square Pyramid"};
+        AlertDialog.Builder builder = new AlertDialog.Builder(this.getContext());
+        builder.setTitle("Pick a model");
+        builder.setItems(colors, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String filePath = "models/Cube/cube.obj";
+                String cubeRaw = FileUtil.readAssetFile(mContext, filePath);
+                filePath = "models/Cube/cube.col";
+                String cubeRawCol = FileUtil.readAssetFile(mContext, filePath);
+                Model cube = new Model(cubeRaw, cubeRawCol);
+
+                filePath = "models/Square_Pyramid/square_pyramid.obj";
+                String pyrRaw = FileUtil.readAssetFile(mContext, filePath);
+                filePath = "models/Square_Pyramid/square_pyramid.col";
+                String pyrRawCol = FileUtil.readAssetFile(mContext, filePath);
+                Model sqrPyr = new Model(pyrRaw, pyrRawCol);
+
+                if(which == 0) {
+                    curModel = cube;
+                } else {
+                    curModel = sqrPyr;
+                }
+            }
+        });
+        builder.show();
     }
 
     public void initialize() {
@@ -114,52 +132,32 @@ public class PixelView extends View {
         }
     }
 
-    // Runs every frame
-    public void buildFrame(int frameVal) {
-        int barheight = 8;
-        int amnt = dims[0]*barheight;
-        int offsetY = ((int) (dims[1]/2-colorCycle.length*barheight/2));
-//        int offsetY = ((int) (100*Math.sin((double)frameVal/5)) + 10*barheight);
-        for(int j = 0; j < colorCycle.length; j++) {
-            for(int i = 0; i < amnt; i++) {
-                int xVal = i%dims[0];
-                int yVal = i/dims[0]+offsetY+j*barheight+(int)(xVal*0.5*Math.sin((double) (xVal + frameVal * 5) / 20));
-                putPixel(xVal, yVal, colorCycle[j]);
-            }
-        }
-    }
-
+    // Main running code
     public void drawFrame(int frameVal) {
+        System.out.println("Frame: " + frameVal);
+
         List<Face> faces = new ArrayList<Face>();
         double t = (tNow-tPrev);
-//        System.out.println(frameVal);
-        // console.log(t + " ms");
-        double tIn = (t+1)/10;
-        double rot = tIn;
-        // let rot = 2/(t+1);
+
+
         s.screenFill(BLACK);
-        // testObj.setPos([0, 2, -5]);
-        double angleSet = (tNow-tInit)/20000;
-//         console.log(angleSet)
-        System.out.println(angleSet);
-        curModel.setPos(new double[]{0, 0, -4});
-        curModel.setRot(new double[]{angleSet, 45, 0});
-        // testObj.addRot([0, rot, 0]);
+
+        double angleSet = (tNow-tInit)/20;
+
+        curModel.setPos(new double[]{0, 1.7*Math.sin(angleSet/100), -4});
+        curModel.setRot(new double[]{-180-touchPos[1]*mouseRot, -touchPos[0]*mouseRot, 0});
+
         curModel.addObject(faces);
         for(int i = 0; i < faces.size(); i++) {
             faces.get(i).drawFace(s);
         }
-        //testObj.printData();
-
         s.zClear();
     }
 
     // Boilerplate to display generated pixels
     public void mainRun(Canvas canvas) {
-        if(pixels != null && s != null) {
+        if(pixels != null && s != null && curModel != null) {
             FRAME += 1;
-//            System.out.println("Frame: " + FRAME);
-//            buildFrame(FRAME);
             drawFrame(FRAME);
             drawBuffer.setPixels(pixels, 0, screenDims[0], 0, 0, screenDims[0], screenDims[1]);
             canvas.drawBitmap(drawBuffer, 0.0F, 0.0F,null);
